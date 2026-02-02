@@ -347,58 +347,51 @@ void on_btn_set_date(lv_event_t * e) {
 void on_btn_auto_start(lv_event_t * e) {
     lv_event_code_t code = lv_event_get_code(e);
     static uint32_t press_start_time = 0;
-    static int last_countdown = -1; // Variabel statis untuk menyimpan angka terakhir
 
     // 1. JIKA SISTEM SEDANG JALAN (RECORDING)
     if (isAutoMode) {
+        // Hanya trigger STOP jika tombol BARU ditekan (bukan sisa dari countdown)
         if (code == LV_EVENT_CLICKED) {
             stopSystem();
         }
         return;
     }
 
-    // 2. JIKA SISTEM BERHENTI
+    // 2. JIKA SISTEM BERHENTI (LOGIKA LONG PRESS 3 DETIK)
     if (code == LV_EVENT_PRESSED) {
         press_start_time = millis();
-        g_isCountingDown = true;
-        last_countdown = -1; // Reset last_countdown saat tombol baru ditekan
+        g_isCountingDown = true; 
         
         if (ui_Panel3 != NULL) lv_obj_clear_flag(ui_Panel3, LV_OBJ_FLAG_HIDDEN);
         if (ui_Label22 != NULL) {
-            lv_obj_set_style_text_font(ui_Label22, &ui_font_MAIN, 0);
+            lv_obj_set_style_text_font(ui_Label22, &ui_font_MAIN, 0); 
             lv_label_set_text(ui_Label22, "3");
         }
     } 
     else if (code == LV_EVENT_PRESSING && g_isCountingDown) {
         uint32_t duration = millis() - press_start_time;
-
+        
         if (duration >= 3000) {
-            g_isCountingDown = false;
+            g_isCountingDown = false; // Matikan flag sebelum start agar tidak tertangkap event release
             if (ui_Panel3 != NULL) lv_obj_add_flag(ui_Panel3, LV_OBJ_FLAG_HIDDEN);
-            startSystem(); 
             
+            startSystem(); // Memulai record [cite: 45, 57]
+            
+            // PAKSA LVGL menganggap input ini sudah selesai agar tidak men-trigger event selanjutnya
             lv_indev_t * indev = lv_indev_get_act();
             if(indev) lv_indev_wait_release(indev); 
         } else {
-            // --- BAGIAN YANG DIPERBAIKI ---
             int countdown = 3 - (duration / 1000);
-            
-            // Cek apakah angka berubah. Jika SAMA, JANGAN update UI.
-            if (countdown != last_countdown) {
-                last_countdown = countdown; // Simpan angka baru
-                
-                if (ui_Label22 != NULL) {
-                    char buf[4];
-                    snprintf(buf, sizeof(buf), "%d", countdown);
-                    lv_label_set_text(ui_Label22, buf);
-                }
+            if (ui_Label22 != NULL) {
+                char buf[4];
+                snprintf(buf, sizeof(buf), "%d", countdown);
+                lv_label_set_text(ui_Label22, buf);
             }
-            // -----------------------------
         }
     }
     else if (code == LV_EVENT_RELEASED || code == LV_EVENT_PRESS_LOST) {
         if (g_isCountingDown) {
-            g_isCountingDown = false;
+            g_isCountingDown = false; 
             if (ui_Panel3 != NULL) lv_obj_add_flag(ui_Panel3, LV_OBJ_FLAG_HIDDEN);
         }
     }
