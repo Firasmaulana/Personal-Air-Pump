@@ -1476,16 +1476,6 @@ void loop() {
        USBSerial.printf("UI UPDATE: Rollers set to %d . %d %d\n", d1, d2, d3);
     }
 
-    static bool btn20Hooked = false;
-
-    if (ui_Screen3 != NULL) { // Ganti ui_Screen3 dengan layar tempat tombol berada
-        if (ui_Button20 != NULL && !btn20Hooked) {
-            lv_obj_add_event_cb(ui_Button20, on_btn_set_date, LV_EVENT_CLICKED, NULL);
-            btn20Hooked = true;
-        }
-    } else {
-        btn20Hooked = false;
-    }     
 
   // ============================================================
   // FITUR 6: UPDATE DATA UI
