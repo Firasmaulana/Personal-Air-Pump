@@ -252,7 +252,11 @@ float getFlowLPM(float voltage) {
 void startSystem() {
     if (isAutoMode) return; // Jika sudah jalan, abaikan
 
-    DateTime now = rtc.now();
+    if (TaskSensorHandle != NULL) {
+        vTaskSuspend(TaskSensorHandle); 
+    }
+
+    DateTime now = DateTime(g_curYear, g_curMonth, g_curDay, g_curHour, g_curMinute, g_curSecond);
     USBSerial.printf("DEBUG RTC: Bln=%d, Tgl=%d\n", now.month(), now.day());
     snprintf(g_logFileName, sizeof(g_logFileName), "/%04d%02d%02d_%02d%02d%02d.csv", 
              now.year(), now.month(), now.day(),
@@ -289,6 +293,11 @@ void startSystem() {
         lv_label_set_text(ui_Label3, "Stop");
         lv_obj_set_style_text_color(ui_Label3, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     }
+
+    if (TaskSensorHandle != NULL) {
+        vTaskResume(TaskSensorHandle);
+    }
+
     USBSerial.printf("SYSTEM STARTED: Target %.2f LPM\n", targetFlow);
 }
 
@@ -1126,11 +1135,17 @@ void setup() {
   if(ui_Spinner1 != NULL) lv_obj_add_flag(ui_Spinner1, LV_OBJ_FLAG_HIDDEN);
   if(ui_Button14 != NULL) lv_obj_add_event_cb(ui_Button14, on_btn_delete_all, LV_EVENT_CLICKED, NULL);
   if(ui_Button20 != NULL) lv_obj_add_event_cb(ui_Button20, on_btn_set_date, LV_EVENT_CLICKED, NULL);
-  USBSerial.println("Setup done");
+  lv_scr_load(ui_Screen2);
+  lv_timer_handler(); // Biarkan LVGL membangun objek
+  delay(2);
+  
+  lv_scr_load(ui_Screen1);
+  lv_timer_handler();
+  delay(2);
 }
 
 void refreshCsvList() {
-    // 1. Cek kesiapan SD Card dan objek UI [cite: 206, 207]
+
     if (!g_sdReady || ui_Dropdown5 == NULL) {
         if (ui_Dropdown5 != NULL) {
             lv_dropdown_set_options(ui_Dropdown5, "SD Card Error");
